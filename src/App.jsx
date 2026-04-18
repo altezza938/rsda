@@ -70,10 +70,10 @@ export default function App() {
       {/* ── Wall type tabs ── */}
       <WallTypeSelector active={wallType} onChange={t => { setWallType(t); setResults(null) }} />
 
-      {/* ── Three-column layout ── */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-0">
+      {/* ── Three-column layout: 1-1-2 ratio ── */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-0">
         {/* Column 1: Inputs */}
-        <div className="bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="bg-white border-r border-gray-200 overflow-y-auto lg:col-span-1">
           <InputPanel
             wallType={wallType}
             onResults={handleResults}
@@ -83,12 +83,12 @@ export default function App() {
         </div>
 
         {/* Column 2: Live SVG diagram */}
-        <div className="bg-gray-50 border-r border-gray-200 flex items-start justify-center p-4">
+        <div className="bg-gray-50 border-r border-gray-200 flex items-start justify-center p-4 lg:col-span-1">
           <WallDiagram wallType={wallType} params={params} results={results} />
         </div>
 
-        {/* Column 3: Results */}
-        <div className="bg-white overflow-y-auto">
+        {/* Column 3+4: Results (wider — holds full calc sheet) */}
+        <div className="bg-white overflow-y-auto lg:col-span-2">
           <ResultsPanel wallType={wallType} results={results} params={params} project={project} />
         </div>
       </div>

@@ -291,17 +291,16 @@ export default function InputPanel({ wallType, onResults, onParams }) {
         results.wallType = 2
       } else if (wallType === 3) {
         // Trial wedge, then nail forces, then FOS
-        const { Pa, thetaCrit, details: wedgeDetails } = trialWedge({
+        const { Pa, thetaCrit, rows: wedgeDetails } = trialWedge({
           H: params.H, gamma: params.gamma, cohesion: params.cohesion,
           phi: params.phi, delta: params.delta, omega: params.batter,
           hw: params.hw, surcharge: params.surcharge,
         })
         const Pa_h = Pa * Math.cos((params.delta + params.batter) * Math.PI / 180)
-        // Distribute Pa over nail rows (simplified equal distribution)
         const n = params.nails.length || 1
-        const T_per_nail = (Pa_h / n)   // kN/m shared equally; multiply by sh for kN/nail
+        const T_per_nail = Pa_h / n
         const nailResults = params.nails.map(nail => {
-          const T = T_per_nail * nail.sh   // kN per nail
+          const T = T_per_nail * nail.sh
           return { ...soilNailCapacity({ ...nail, T_demand: T }), T, nail }
         })
         const fosSlide = skinWallFOS({

@@ -47,7 +47,7 @@ export function gravityWallCheck(p) {
   const delta_r = delta  * DEG
 
   // Active earth pressure (trial wedge on back face)
-  const { Pa, thetaCrit, details: wedgeDetails } = trialWedge({
+  const { Pa, thetaCrit, rows: wedgeDetails } = trialWedge({
     H, gamma, cohesion, phi, delta, omega: batter, hw, surcharge,
   })
 
@@ -112,7 +112,7 @@ export function cantileverWallCheck(p) {
   const delta_r = delta  * DEG
 
   // Earth pressure on back face of STEM
-  const { Pa, thetaCrit, details: wedgeDetails } = trialWedge({
+  const { Pa, thetaCrit, rows: wedgeDetails } = trialWedge({
     H, gamma, cohesion, phi, delta, omega: batter, hw, surcharge,
   })
   const Pa_h = Pa * Math.cos(delta_r + omega_r)
