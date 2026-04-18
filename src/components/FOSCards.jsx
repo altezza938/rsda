@@ -84,8 +84,8 @@ export default function FOSCards({ results, wallType }) {
         <FOSCard label="FOS Overall Sliding" value={results.fosSlide?.FOS ?? 0} threshold={GG1_THRESHOLDS.sliding.SLS} level="SLS" />
         <div className="rounded-lg border border-gray-200 p-3 text-sm text-gray-600">
           <div className="font-semibold mb-1 text-primary">Earth Pressure</div>
-          <div className="text-xs">Pa = {results.Pa.toFixed(2)} kN/m (θ = {results.thetaCrit}°)</div>
-          <div className="text-xs">Pa_h = {results.Pa_h.toFixed(2)} kN/m</div>
+          <div className="text-xs">Pa = {results.Pa?.toFixed(2)} kN/m (θ = {results.thetaCrit}°)</div>
+          <div className="text-xs">Pa_h = {results.Pa_h?.toFixed(2)} kN/m</div>
         </div>
       </div>
     )

@@ -290,6 +290,7 @@ export default function InputPanel({ wallType, onResults, onParams }) {
         results = miniPileCheck(params)
         results.wallType = 2
       } else if (wallType === 3) {
+        if (!params.nails) return   // params not yet reset for this wall type
         // Trial wedge, then nail forces, then FOS
         const { Pa, thetaCrit, rows: wedgeDetails } = trialWedge({
           H: params.H, gamma: params.gamma, cohesion: params.cohesion,

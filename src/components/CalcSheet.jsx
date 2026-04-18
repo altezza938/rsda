@@ -244,7 +244,7 @@ export function MiniPileCalcSheet({ results, params }) {
    SKIN WALL + SOIL NAILS  (FR146-style)
 ════════════════════════════════════════════════════════════ */
 export function SoilNailCalcSheet({ results, params }) {
-  if (!results) return null
+  if (!results || !params || !params.nails) return null
   const r = results, p = params
 
   return (
@@ -305,6 +305,7 @@ export function SoilNailCalcSheet({ results, params }) {
           <tbody>
             {r.nailResults?.map((nr, i) => {
               const nail = p.nails[i]
+              if (!nail) return null
               return (
                 <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                   <td className="px-2 py-1 text-center font-bold">R{i + 1}</td>
@@ -334,6 +335,7 @@ export function SoilNailCalcSheet({ results, params }) {
       <SectionHead>5. Nail Capacity Derivation</SectionHead>
       {r.nailResults?.map((nr, i) => {
         const nail = p.nails[i]
+        if (!nail) return null
         return (
           <div key={i} className="border-b border-gray-100 px-3 py-1.5">
             <div className="font-bold text-primary mb-0.5">Row {i + 1} — Level {nail.level_mPD} mPD</div>
