@@ -3,6 +3,7 @@
  * Mirrors R376 (gravity/cantilever) and FR146 (soil nails) workbook layout.
  */
 import TrialWedgeTable from './TrialWedgeTable'
+import { GG1_THRESHOLDS } from '../calculations/constants'
 
 /* ── Shared helpers ── */
 const fmt3 = (v) => (v == null || !isFinite(v) ? '—' : Number(v).toFixed(3))
@@ -73,17 +74,18 @@ function FOSSummaryBar({ label, value, threshold, level }) {
 /* ════════════════════════════════════════════════════════════
    GRAVITY / CANTILEVER WALL  (R376-style)
 ════════════════════════════════════════════════════════════ */
-export function GravityCalcSheet({ results, params, wallType }) {
+export function GravityCalcSheet({ results, params, wallType, fosMode = 'SLS' }) {
   if (!results) return null
   const r = results
   const p = params
   const B = wallType === 1 ? (p.Lt + p.ts + p.Lh) : p.B
+  const isULS = fosMode === 'ULS'
 
   return (
     <div className="text-xs rounded-lg border border-gray-200 overflow-hidden shadow-sm mt-4">
       <SheetHeader
         title={wallType === 0 ? 'Gravity Wall — Stability Check (R376)' : 'L-Cantilever Wall — Stability Check (R376)'}
-        subtitle="GeoGuide 1 (2011) — SLS Checks"
+        subtitle="GeoGuide 1 (2011) — SLS / ULS Checks"
       />
 
       {/* Input summary */}
@@ -153,21 +155,48 @@ export function GravityCalcSheet({ results, params, wallType }) {
 
       {/* Sliding */}
       <SectionHead>4. FOS Against Sliding</SectionHead>
-      <Row label="Driving force (Pa·cosδ + U·cosω)" value={fmt3(r.F_drive_slide)} unit="kN/m" formula="Pa_h + U_h" />
-      <Row label="Resisting = N·tan φf' + cf'·B"     value={fmt3(r.F_resist_slide)} unit="kN/m" />
-      <FOSSummaryBar label="FOS Sliding" value={r.FOS_sliding} threshold={1.5} level="SLS" />
+      {isULS
+        ? <>
+            <Row label={`Driving force (Pa×${1.2} + U)`} value={fmt3(r.F_drive_slide_uls)} unit="kN/m" />
+            <Row label="Resisting = N_uls·tan φf' + cf'·B" value={fmt3(r.F_resist_slide_uls)} unit="kN/m" />
+          </>
+        : <>
+            <Row label="Driving force (Pa·cosδ + U·cosω)" value={fmt3(r.F_drive_slide)} unit="kN/m" formula="Pa_h + U_h" />
+            <Row label="Resisting = N·tan φf' + cf'·B"     value={fmt3(r.F_resist_slide)} unit="kN/m" />
+          </>
+      }
+      <FOSSummaryBar label="FOS Sliding" value={r.FOS_sliding}     threshold={GG1_THRESHOLDS.sliding.SLS} level="SLS" />
+      <FOSSummaryBar label="FOS Sliding" value={r.FOS_sliding_uls} threshold={GG1_THRESHOLDS.sliding.ULS} level="ULS" />
 
       {/* Overturning */}
       <SectionHead>5. FOS Against Overturning (about Toe A)</SectionHead>
-      <Row label="Overturning moment ΣMo"   value={fmt3(r.ΣMo)}  unit="kN·m/m" formula="Pa_h·H/3 + U·B/3" />
-      <Row label="Stabilising moment ΣMr"   value={fmt3(r.ΣMr)}  unit="kN·m/m" formula="W·xc + Pa_v·B" />
-      <FOSSummaryBar label="FOS Overturning" value={r.FOS_overturning} threshold={2.0} level="SLS" />
+      {isULS
+        ? <>
+            <Row label="Overturning moment ΣMo (ULS)" value={fmt3(r.ΣMo_uls)} unit="kN·m/m" />
+            <Row label="Stabilising moment ΣMr (ULS)" value={fmt3(r.ΣMr_uls)} unit="kN·m/m" />
+          </>
+        : <>
+            <Row label="Overturning moment ΣMo"   value={fmt3(r.ΣMo)}  unit="kN·m/m" formula="Pa_h·H/3 + U·B/3" />
+            <Row label="Stabilising moment ΣMr"   value={fmt3(r.ΣMr)}  unit="kN·m/m" formula="W·xc + Pa_v·B" />
+          </>
+      }
+      <FOSSummaryBar label="FOS Overturning" value={r.FOS_overturning}     threshold={GG1_THRESHOLDS.overturning.SLS} level="SLS" />
+      <FOSSummaryBar label="FOS Overturning" value={r.FOS_overturning_uls} threshold={GG1_THRESHOLDS.overturning.ULS} level="ULS" />
 
       {/* Eccentricity + bearing */}
       <SectionHead>6. Bearing Capacity — Vesic Formula</SectionHead>
-      <Row label="Eccentricity e = B/2 − ΣM/N" value={fmt3(r.e)}        unit="m"   formula="B/2 − (ΣMr−ΣMo)/N" />
-      <Row label="Effective base B' = B − 2e"   value={fmt3(r.B_eff)}   unit="m" />
-      <Row label="Applied pressure q = N/B'"     value={fmt1(r.bearing?.qapplied)} unit="kPa" highlight />
+      {isULS
+        ? <>
+            <Row label="Eccentricity e (ULS)"       value={fmt3(r.e_uls)}    unit="m" />
+            <Row label="Effective base B' (ULS)"     value={fmt3(r.B_eff_uls)} unit="m" />
+            <Row label="Applied pressure q (ULS)"    value={fmt1(r.bearing_uls?.qapplied)} unit="kPa" highlight />
+          </>
+        : <>
+            <Row label="Eccentricity e = B/2 − ΣM/N" value={fmt3(r.e)}        unit="m"   formula="B/2 − (ΣMr−ΣMo)/N" />
+            <Row label="Effective base B' = B − 2e"   value={fmt3(r.B_eff)}   unit="m" />
+            <Row label="Applied pressure q = N/B'"     value={fmt1(r.bearing?.qapplied)} unit="kPa" highlight />
+          </>
+      }
       {r.bearing && <>
         <TwoCol
           left={<>
@@ -183,7 +212,8 @@ export function GravityCalcSheet({ results, params, wallType }) {
         />
         <Row label="Ultimate bearing capacity qu" value={fmt1(r.bearing.qu)} unit="kPa" highlight />
       </>}
-      <FOSSummaryBar label="FOS Bearing" value={r.FOS_bearing} threshold={1.0} level="SLS" />
+      <FOSSummaryBar label="FOS Bearing" value={r.FOS_bearing}     threshold={GG1_THRESHOLDS.bearing.SLS} level="SLS" />
+      <FOSSummaryBar label="FOS Bearing" value={r.FOS_bearing_uls} threshold={GG1_THRESHOLDS.bearing.ULS} level="ULS" />
 
       {/* Base pressure (cantilever only) */}
       {wallType === 1 && r.q_max != null && <>

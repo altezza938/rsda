@@ -12,9 +12,7 @@ function FOSCard({ label, value, threshold, level = 'SLS', animKey }) {
     return () => clearTimeout(t)
   }, [value])
 
-  const tag = level === 'SLS'
-    ? 'bg-sls text-white'
-    : 'bg-uls text-white'
+  const tag = level === 'SLS' ? 'bg-sls text-white' : 'bg-uls text-white'
 
   return (
     <div className={`rounded-lg border-2 p-4 transition-all ${pass ? 'border-pass' : 'border-fail'}`}>
@@ -33,7 +31,7 @@ function FOSCard({ label, value, threshold, level = 'SLS', animKey }) {
   )
 }
 
-export default function FOSCards({ results, wallType }) {
+export default function FOSCards({ results, wallType, fosMode = 'SLS' }) {
   if (!results) {
     return (
       <div className="text-center py-8 text-gray-400 text-sm">
@@ -43,12 +41,28 @@ export default function FOSCards({ results, wallType }) {
   }
 
   if (wallType === 0 || wallType === 1) {
+    const isULS = fosMode === 'ULS'
     return (
       <div className="grid grid-cols-1 gap-3">
-        <FOSCard label="FOS Sliding"    value={results.FOS_sliding}     threshold={GG1_THRESHOLDS.sliding.SLS}     level="SLS" />
-        <FOSCard label="FOS Overturning" value={results.FOS_overturning} threshold={GG1_THRESHOLDS.overturning.SLS} level="SLS" />
-        <FOSCard label="FOS Bearing"    value={results.FOS_bearing}      threshold={GG1_THRESHOLDS.bearing.SLS}     level="SLS" />
-        {wallType === 1 && results.q_max !== undefined && (
+        <FOSCard
+          label="FOS Sliding"
+          value={isULS ? (results.FOS_sliding_uls ?? 0) : results.FOS_sliding}
+          threshold={GG1_THRESHOLDS.sliding[fosMode]}
+          level={fosMode}
+        />
+        <FOSCard
+          label="FOS Overturning"
+          value={isULS ? (results.FOS_overturning_uls ?? 0) : results.FOS_overturning}
+          threshold={GG1_THRESHOLDS.overturning[fosMode]}
+          level={fosMode}
+        />
+        <FOSCard
+          label="FOS Bearing"
+          value={isULS ? (results.FOS_bearing_uls ?? 0) : results.FOS_bearing}
+          threshold={GG1_THRESHOLDS.bearing[fosMode]}
+          level={fosMode}
+        />
+        {wallType === 1 && !isULS && results.q_max !== undefined && (
           <div className="rounded-lg border border-gray-200 p-3 text-xs text-gray-600">
             <div className="font-semibold mb-1">Base Pressures</div>
             <div>q_max = {results.q_max.toFixed(1)} kPa</div>

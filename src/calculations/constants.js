@@ -1,4 +1,6 @@
-// GeoGuide 1 (GG1) thresholds and material presets
+// GeoGuide 1 (GG1) thresholds, partial factors, and material presets
+
+export const GAMMA_E = 1.2   // Load factor on active earth pressure (ULS)
 
 export const GG1_THRESHOLDS = {
   sliding:     { SLS: 1.5,  ULS: 1.1 },

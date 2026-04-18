@@ -205,6 +205,7 @@ function MiniPileInputs({ p, setP }) {
    SKIN WALL + SOIL NAILS INPUT
 ════════════════════════════════════════════════ */
 function SkinWallInputs({ p, setP, onApplyPreset }) {
+  if (!p.nails) return null   // brief mismatch during wall-type transition
   const f = (k) => (v) => setP(prev => ({ ...prev, [k]: v }))
 
   const updateNail = (i, k, v) => setP(prev => {
