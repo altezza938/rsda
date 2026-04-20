@@ -5,6 +5,7 @@
 import { useState, useMemo } from 'react'
 import { slendernessCheck, SLENDERNESS_LIMIT_GG1, SLENDERNESS_LIMIT_R376 } from '../calculations/slendernessRatio.js'
 import { NumInput, Section } from '../components/NumInput.jsx'
+import { SuggestPanel, SuggestRow, OptimizeResult } from '../components/SuggestPanel.jsx'
 
 const DEFAULT_SECTIONS = [
   { label: 'Lower wall', H: 3.4, t: 0.2 },
@@ -119,6 +120,33 @@ export default function SlendernessTab() {
             </tbody>
           </table>
         </div>
+
+        {/* Suggestions per section */}
+        {results.map((r, i) => {
+          const t_gg1 = parseFloat((r.H / SLENDERNESS_LIMIT_GG1).toFixed(3))
+          const t_r376 = parseFloat((r.H / SLENDERNESS_LIMIT_R376).toFixed(3))
+          const allPass = r.passGG1 && r.passR376
+          return (
+            <SuggestPanel key={i} title={`${r.label} — Min Thickness`} allPass={allPass}>
+              <SuggestRow label={`GG1: H/t ≤ ${SLENDERNESS_LIMIT_GG1}`}
+                current={r.t} suggested={!r.passGG1 ? t_gg1 : null} unit="m" pass={r.passGG1}
+                onApply={!r.passGG1 ? () => updateSection(i, 't', t_gg1) : null}
+              />
+              <SuggestRow label={`R376: H/t ≤ ${SLENDERNESS_LIMIT_R376}`}
+                current={r.t} suggested={!r.passR376 ? t_r376 : null} unit="m" pass={r.passR376}
+                onApply={!r.passR376 ? () => updateSection(i, 't', t_r376) : null}
+              />
+              {!allPass && (
+                <OptimizeResult
+                  label="Required thickness (governing)"
+                  value={Math.max(t_gg1, t_r376)}
+                  unit="m"
+                  note={`GG1 requires ≥ ${t_gg1}m; R376 requires ≥ ${t_r376}m`}
+                />
+              )}
+            </SuggestPanel>
+          )
+        })}
 
         {/* Visual bars */}
         <div className="mb-4">

@@ -7,6 +7,7 @@ import { soilNailCheck } from '../calculations/soilNailDesign.js'
 import { NumInput, Section } from '../components/NumInput.jsx'
 import { FOSCard, FOSGrid } from '../components/FOSCard.jsx'
 import { CalcBreakdown, CalcLine } from '../components/CalcBreakdown.jsx'
+import { SuggestPanel, SuggestRow, OptimizeResult } from '../components/SuggestPanel.jsx'
 
 const DEFAULT_ROWS = [
   { id: 1, label: 'Row A', T_demand: 10, barLength: 4, sh: 1.0, layers: [
@@ -37,13 +38,26 @@ export default function SoilNailTab() {
   const f = k => v => setP(prev => ({ ...prev, [k]: v }))
 
   const results = useMemo(() => rows.map(row =>
-    soilNailCheck({
-      ...p,
-      barLength: row.barLength,
-      T_demand: row.T_demand,
-      layers: row.layers,
-    })
+    soilNailCheck({ ...p, barLength: row.barLength, T_demand: row.T_demand, layers: row.layers })
   ), [p, rows])
+
+  /* ── Per-row suggestions ── */
+  const suggestions = useMemo(() => results.map((r, i) => {
+    const row = rows[i]
+    // Min bar diameter for FOS_A ≥ 1.0 — solve net_d: fy*π*(d-4)²/4000² ≥ T_demand
+    // d_net_min = sqrt(4*T_demand*1000/(fy*π)) * 1000 + 4  (in mm)
+    const d_net_min = Math.sqrt(4 * row.T_demand * 1000 / (p.fy * Math.PI)) * 1000
+    const bar_mm_min = Math.ceil(d_net_min + 4)
+
+    // Min nail length for FOS_C ≥ 2.0 (linear scaling: T_sg proportional to Le)
+    // T_sg_needed = 2.0 * T_demand; scale all Le values
+    const Le_factor = r.T_sg > 0 ? (2.0 * row.T_demand) / r.T_sg : null
+    const len_min_C = Le_factor != null
+      ? parseFloat((row.barLength * Le_factor).toFixed(2))
+      : null
+
+    return { bar_mm_min, len_min_C, Le_factor }
+  }), [results, rows, p])
 
   const fmt = (v, d = 3) => v == null ? '—' : Number(v).toFixed(d)
 
@@ -169,6 +183,41 @@ export default function SoilNailTab() {
             </div>
           </div>
         )}
+
+        {/* Per-row suggestions */}
+        {rows.map((row, i) => {
+          const r = results[i]
+          const sg = suggestions[i]
+          if (!r) return null
+          const allPass = r.FOS_A >= 1.0 && r.FOS_B >= 1.0 && r.FOS_C >= 2.0
+          return (
+            <SuggestPanel key={`sg-${row.id}`} title={`${row.label} — Suggestions`} allPass={allPass}>
+              <SuggestRow label="FOS_A ≥ 1.0 (bar tension)"
+                current={p.diameter_mm} suggested={r.FOS_A < 1.0 ? sg.bar_mm_min : null}
+                unit="mm bar" pass={r.FOS_A >= 1.0}
+                onApply={r.FOS_A < 1.0 && sg.bar_mm_min
+                  ? () => setP(prev => ({ ...prev, diameter_mm: sg.bar_mm_min })) : null}
+              />
+              <SuggestRow label="FOS_B ≥ 1.0 (grout-bar bond)"
+                current={row.barLength}
+                suggested={r.FOS_B < 1.0 ? parseFloat((row.barLength / (r.Fmax_B / (row.T_demand > 0 ? row.T_demand : 1))).toFixed(2)) : null}
+                unit="m" pass={r.FOS_B >= 1.0} />
+              <SuggestRow label="FOS_C ≥ 2.0 (soil-grout pullout)"
+                current={row.barLength} suggested={r.FOS_C < 2.0 ? sg.len_min_C : null}
+                unit="m" pass={r.FOS_C >= 2.0}
+                onApply={r.FOS_C < 2.0 && sg.len_min_C
+                  ? () => setRows(prev => prev.map((rw, idx) => idx === i
+                    ? { ...rw, barLength: sg.len_min_C,
+                        layers: rw.layers.map(l => ({ ...l, Le: parseFloat((l.Le * (sg.Le_factor ?? 1)).toFixed(2)) })) }
+                    : rw)) : null}
+              />
+              {!allPass && sg.len_min_C && r.FOS_C < 2.0 && (
+                <OptimizeResult label="Required nail length (Mode C governs)" value={sg.len_min_C} unit="m"
+                  note={`Current: ${row.barLength}m → scale Le by ×${fmt(sg.Le_factor,2)}`} />
+              )}
+            </SuggestPanel>
+          )
+        })}
 
         {/* Per-row breakdown */}
         {rows.map((row, i) => {

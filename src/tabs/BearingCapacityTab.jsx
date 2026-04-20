@@ -4,8 +4,10 @@
  */
 import { useState, useMemo } from 'react'
 import { vesicBearing } from '../calculations/bearingCapacity.js'
+import { bisect } from '../utils/optimize.js'
 import { NumInput, Section } from '../components/NumInput.jsx'
 import { CalcBreakdown, CalcLine } from '../components/CalcBreakdown.jsx'
+import { SuggestPanel, SuggestRow, OptimizeResult } from '../components/SuggestPanel.jsx'
 
 const DEFAULTS = {
   cf: 4, phif: 30, gamma_f: 19,
@@ -27,6 +29,29 @@ export default function BearingCapacityTab({ onResultChange }) {
       return res
     } catch { return null }
   }, [p])
+
+  /* ── Applied pressure from normal load ── */
+  const q_applied = p.B > 0 ? p.Q / p.B : null
+  const fosApplied = (r && q_applied > 0) ? r.qu / q_applied : null
+
+  /* ── Optimization: min Df for target qult ── */
+  const [targetQult, setTargetQult] = useState(200)
+  const Df_min = useMemo(() => {
+    try {
+      return bisect(Df => vesicBearing({ ...p, Df }).qu - targetQult, 0, 20)
+    } catch { return null }
+  }, [p, targetQult])
+
+  /* ── Optimization: min B for current Df ── */
+  const B_min = useMemo(() => {
+    if (!q_applied) return null
+    try {
+      return bisect(B => {
+        const res = vesicBearing({ ...p, B })
+        return res.qu - q_applied
+      }, 0.05, 20)
+    } catch { return null }
+  }, [p, q_applied])
 
   const fmt = (v, d = 3) => v == null ? '—' : Number(v).toFixed(d)
 
@@ -146,6 +171,52 @@ export default function BearingCapacityTab({ onResultChange }) {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        {/* Applied load check + design suggestions */}
+        <div className="mb-3 rounded border border-gray-200 p-3 text-xs">
+          <div className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Applied Load Check</div>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="rounded border border-gray-100 p-2 bg-gray-50 text-center">
+              <div className="text-[10px] text-gray-400 mb-0.5">q applied</div>
+              <div className="font-mono font-bold">{q_applied != null ? fmt(q_applied, 2) : '—'}</div>
+              <div className="text-[9px] text-gray-400">kPa</div>
+            </div>
+            <div className="rounded border border-gray-100 p-2 bg-gray-50 text-center">
+              <div className="text-[10px] text-gray-400 mb-0.5">qult</div>
+              <div className="font-mono font-bold text-primary">{fmt(r?.qu, 2)}</div>
+              <div className="text-[9px] text-gray-400">kPa</div>
+            </div>
+            <div className={`rounded border-2 p-2 text-center ${fosApplied != null && fosApplied >= 1 ? 'border-pass bg-green-50' : 'border-fail bg-red-50'}`}>
+              <div className="text-[10px] text-gray-400 mb-0.5">FOS = qult/q</div>
+              <div className={`font-mono font-bold text-lg ${fosApplied != null && fosApplied >= 1 ? 'text-pass' : 'text-fail'}`}>
+                {fosApplied != null ? fmt(fosApplied, 2) : '—'}
+              </div>
+            </div>
+          </div>
+
+          {/* Target qult for Df suggestion */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-gray-500 shrink-0">Target qult:</span>
+            <input type="number" value={targetQult} onChange={e => setTargetQult(+e.target.value)}
+              className="border rounded px-2 py-0.5 text-xs w-24 font-mono" min={50} max={2000} step={50} />
+            <span className="text-gray-400">kPa</span>
+          </div>
+
+          {Df_min != null ? (
+            <div className="flex items-center gap-2">
+              <OptimizeResult label={`Min Df for qult ≥ ${targetQult} kPa`} value={Df_min} unit="m"
+                note={`Current Df=${p.Df}m → qult=${fmt(r?.qu,1)} kPa`} />
+              {Df_min !== p.Df && (
+                <button onClick={() => setP(prev => ({ ...prev, Df: Df_min }))}
+                  className="px-2 py-1 rounded bg-primary text-white text-[10px] font-bold hover:bg-green-800 shrink-0">
+                  Apply
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="text-fail text-xs">Target qult not achievable by increasing Df alone — consider increasing c' or φ'.</div>
+          )}
         </div>
 
         <CalcBreakdown title="Vesic Formula (GG1 p.239)">
