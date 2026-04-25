@@ -1,21 +1,33 @@
 import { useState } from 'react'
+import VersionPage from './VersionPage.jsx'
+import OldApp from './modules/OldApp.jsx'
+import RetainingApp from './modules/RetainingApp.jsx'
 import LandingPage from './LandingPage.jsx'
 import SlopeApp from './modules/SlopeApp.jsx'
 import ExcavationApp from './modules/ExcavationApp.jsx'
-import RetainingApp from './modules/RetainingApp.jsx'
 import FoundationApp from './modules/FoundationApp.jsx'
 import PileApp from './modules/PileApp.jsx'
 import SettlementApp from './modules/SettlementApp.jsx'
 
-export default function App() {
-  const [mode, setMode] = useState(null)
-  const back = () => setMode(null)
+function GeoSuite({ onBack }) {
+  const [module, setModule] = useState(null)
+  const backToSuite = () => setModule(null)
 
-  if (mode === 'slope')      return <SlopeApp onBack={back} />
-  if (mode === 'excavation') return <ExcavationApp onBack={back} />
-  if (mode === 'retaining')  return <RetainingApp onBack={back} />
-  if (mode === 'foundation') return <FoundationApp onBack={back} />
-  if (mode === 'pile')       return <PileApp onBack={back} />
-  if (mode === 'settlement') return <SettlementApp onBack={back} />
-  return <LandingPage onSelect={setMode} />
+  if (module === 'slope')      return <SlopeApp onBack={backToSuite} />
+  if (module === 'excavation') return <ExcavationApp onBack={backToSuite} />
+  if (module === 'retaining')  return <RetainingApp onBack={backToSuite} />
+  if (module === 'foundation') return <FoundationApp onBack={backToSuite} />
+  if (module === 'pile')       return <PileApp onBack={backToSuite} />
+  if (module === 'settlement') return <SettlementApp onBack={backToSuite} />
+  return <LandingPage onSelect={setModule} onBack={onBack} />
+}
+
+export default function App() {
+  const [version, setVersion] = useState(null)
+  const back = () => setVersion(null)
+
+  if (version === 'v1') return <OldApp onBack={back} />
+  if (version === 'v2') return <RetainingApp onBack={back} />
+  if (version === 'v3') return <GeoSuite onBack={back} />
+  return <VersionPage onSelect={setVersion} />
 }

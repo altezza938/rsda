@@ -113,14 +113,20 @@ const MODULES = [
   },
 ]
 
-export default function LandingPage({ onSelect }) {
+export default function LandingPage({ onSelect, onBack }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
       {/* Header */}
       <header className="bg-charcoal text-white px-6 py-4 shadow-md">
         <div className="max-w-5xl mx-auto flex items-center gap-4">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center font-bold text-lg">A</div>
+          {onBack && (
+            <button onClick={onBack}
+              className="text-gray-400 hover:text-white text-xs border border-gray-600 px-2 py-0.5 rounded shrink-0">
+              ← Versions
+            </button>
+          )}
+          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center font-bold text-lg shrink-0">A</div>
           <div>
             <div className="text-xs text-gray-400 uppercase tracking-widest">AECOM · GEO</div>
             <div className="text-xl font-semibold tracking-wide">Geotechnical Design Suite</div>
